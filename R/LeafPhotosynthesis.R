@@ -9,15 +9,15 @@ LeafPhotosynthesis <- function(physcon, atmos, leaf, flux){
   flux$cp = leaf$cp25 * ft(flux$tleaf, leaf$cpha, physcon)
 
   t1 = ft(flux$tleaf, leaf$vcmaxha,physcon)
-  t2 = fth(flux$tleaf, leaf$vcmaxhd, leaf$vcmaxse, leaf$vcmaxc,physcon)
+  t2 = fth(flux$tleaf, leaf$vcmaxhd, leaf$vcmaxse,physcon)
   flux$vcmax = leaf$vcmax25 * t1 * t2
 
   t1 = ft(flux$tleaf, leaf$jmaxha,physcon)
-  t2 = fth(flux$tleaf, leaf$jmaxhd, leaf$jmaxse, leaf$jmaxc,physcon)
+  t2 = fth(flux$tleaf, leaf$jmaxhd, leaf$jmaxse,physcon)
   flux$jmax = leaf$jmax25 * t1 * t2
 
   t1 = ft(flux$tleaf, leaf$rdha,physcon)
-  t2 = fth(flux$tleaf, leaf$rdhd, leaf$rdse, leaf$rdc,physcon)
+  t2 = fth(flux$tleaf, leaf$rdhd, leaf$rdse,physcon)
   flux$rd = leaf$rd25 * t1 * t2
 
   qabs = 0.5 * leaf$phi_psii * flux$apar

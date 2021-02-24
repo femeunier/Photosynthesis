@@ -41,25 +41,82 @@ where $g_{min}$ and $g_1$ are additional leaf parameters standing for the residu
 knitr::include_graphics('Algo.png')
 ```
 
-The initial guess of $c_i$ is plugged into the FvCB model and allows computing $A_n$ which is in turn used to calculate $c_s$ from the diffusion equation. $c_s$ can then be used to compute the stomatal conductance which serves to re-estimate $c_i$ until some convergence criterion is met. You can find such algorithm in the `Photosyntesis` function attached to this practical.
+The initial guess of $c_i$ is plugged into the FvCB model and allows computing $A_n$ which is in turn used to calculate $c_s$ from the diffusion equation. $c_s$ can then be used to compute the stomatal conductance which serves to re-estimate $c_i$ until some convergence criterion is met. You can find such algorithm in the `Photosynthesis` function attached to this practical.
 
 Add radiative transfer model
 
 ## Site
 
-We will applied this model to Hyytiala, Finland which is an Evergreen Needleleaf Forests. In other words, it is a land dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Almost all trees remain green all year (see site image). Canopy is never without green foliage. The site is characterized by a Mean Annual Temperature of 3.8°C and a Mean Annual Precipitation of 709 mm
+We will applied this model to Hyytiala, Finland which is an Evergreen Needleleaf Forests. In other words, it is a land dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Almost all trees remain green all year (see site image). Canopy is never without green foliage. The site is characterized by a Mean Annual Temperature of 3.8°C and a Mean Annual Precipitation of 709 mm.
 
 ```{r f2, fig.cap='Photo of the modelled site', out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE}
 knitr::include_graphics('fi-hyy-site15overview.gif')
 ```
 
+## Before the practical
+
+We have coded for you the model described above. So you just need to download it from Github. In Rstdio, run the following lines: 
+
+```{r, eval=FALSE}
+install.packages("devtools")
+devtools::install_github("femeunier/Photosynthesis")
+```
+
+And now the package should be made available for loading:
+```{r, eval=TRUE}
+library("Photosynthesis")
+```
+
 ## Questions and report details
 
-0. First explore the package functions. The core is the $canopy_fluxes$ function that essentially takes care of all the steps described above. In particular, it calls the `Photosyntesis` function that solves the system of equations for each layer of vegetation, and aggregates the results. Also pay attention to the `FvCB` function that should be similar to the one you wrote yourself during the last practical.
+0. First explore the package functions. The core is the $canopy_fluxes$ function that essentially takes care of all the steps described above. In particular, it calls the `Photosynthesis` function that solves the system of equations for each layer of vegetation, and aggregates the results. Also pay attention to the `FvCB` function that should be similar to the one you wrote yourself during the last practical.
 
-1. Create a new script to load and explore the input (meterological) data (the FLUXNET_FI-HYY_2005-2014.csv file). Plot in particular the seasonal and diurnal cycles of the following variables: air temperature, relative humidity, short-wave radiation, and atmospheric pressure that force the photosynthesis/stomatal conductance model. If there are non-sensical values, replace them by the corresponding re-analysis columns (the equivalent ERA columns) 
+1. Now, we are going to build and run the photosynthesis/stomatal conductance model. Create a new R script to compute the first 5000 timesteps. It should look like:
+```{r, eval=FALSE}
 
-2. Now, we are going to build and run the photosynthesis/stomatal conductance model (). Use the Install and Restart function button in the Build package in Rstudio to make use of the function. Then open the `Test_photosynthesis` R script to compute the first 5000 timesteps. Follow the workflow to see if you understand the steps explored by the functions.
+rm(list = ls())
+
+library(ggplot2)
+library(Photosynthesis)
+
+# Check the parameters for the functions canopy_fluxes
+?canopy_fluxes
+
+# we load needed parameters
+# leaf physiolofical parameters
+leaf <- Load.LeafPhysiologyParams()
+
+# Adapt leaf photosynthetic parameters corresponding to average values for boreal conifers (Step 2)
+# leaf$vcmax25
+# leaf$jmax25
+
+# We load meteo data from the fluxnet site
+fluxnet_data<-read.table(file = "path/to/FLUXNET_FI-HYY_2005-2014.csv",header = TRUE,sep = ",")
+
+# Check and replace non-sensical values of met forcings here (Step 2)
+
+#Fluxnet data: GPP in µmolCO2 m-2 leaf s-1
+# we want to apply canopy_fluxes at each time step
+
+siteLAI <- 6.7
+apply.photosynthesis<-function(x,leaf,fluxnet_data){
+  meteo<-fluxnet_data[x,]
+  meteo$CO2<-410 # We don't forget atmospheric CO2 concentration, constant here
+  gpp<-canopy_fluxes(meteo = meteo,leaf = leaf, LAI_layer = 20, LAI_tot = siteLAI)
+  return(gpp)
+}
+
+N <- 5000 # number of timesteps to consider (Change here for Step 3)
+results<-sapply(X = c(1:N),FUN = apply.photosynthesis,leaf=leaf,fluxnet_data=fluxnet_data)
+
+# GPP is in µmolCO2 m-2 soil s-1, so we need to multiply by the site LAI
+plot(results[1,1:N]*siteLAI,fluxnet_data$GPP[1:N])
+
+```
+
+Follow the workflow to see if you understand the steps explored by the scripts and the call to the functions.
+
+2. Create a new script to load and explore the input (meterological) data (the FLUXNET_FI-HYY_2005-2014.csv file). Plot in particular the seasonal and diurnal cycles of the following variables: air temperature, relative humidity, short-wave radiation, and atmospheric pressure that force the photosynthesis/stomatal conductance model. If there are non-sensical values, replace them by the corresponding re-analysis columns (the equivalent ERA columns) 
 
 3. Run the photosynthesis/stomatal conductance model for all the timesteps and compare with the observations
 

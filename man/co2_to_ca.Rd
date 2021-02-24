@@ -9,7 +9,7 @@ co2_to_ca(co2, patm)
 \arguments{
 \item{co2}{annual atm. CO2 in ppm}
 
-\item{patm}{atm.pressure in Pa}
+\item{patm}{atm.pressure in kPa}
 }
 \value{
 ca in Pa

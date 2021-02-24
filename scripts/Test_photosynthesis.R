@@ -3,133 +3,32 @@ rm(list = ls())
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(cowplot)
 library(Photosynthesis)
 
+# Check the parameters for the functions canopy_fluxes
+?canopy_fluxes
 
-params <- list(vis = 1,nir = 2)
-physcon <- list(tfrz = 273.15,rgas = 8.31446)
+# we load needed parameters
+# leaf physiolofical parameters
+leaf <- Load.LeafPhysiologyParams()
 
-leaf <- list(colim = 1)
-leaf <- LeafPhysiologyParams(params, physcon, leaf)
+# We adapt leaf photosynthetic parameters corresponding to average values for boreal conifers
 leaf$vcmax25 <- 30
+leaf$jmax25 <- 1.67 * leaf$vcmax25
 
-co2conc = 380
-par_sat = 2000
-leaf_temp = physcon$tfrz + 25
-
-atmos <- list(co2air = co2conc,
-              o2air = 0.209 * 1000)
-
-atmos$par = par_sat
-
-flux <- list()
-flux$apar = atmos$par * (1 - leaf$rho[params$vis] - leaf$tau[params$vis])
-flux$tleaf = leaf_temp
-
-plot_type = 1 # 1 = par, 2 = C02, 3 = Temp
-
-par <- tleaf <- ca <- ci_ca <- ac <- aj <- an <- c()
-if (plot_type == 1){
-
-  for (i in seq(0,par_sat,length.out = 1000)){
-    atmos$par = i
-    flux$apar = atmos$par * (1 - leaf$rho[params$vis] - leaf$tau[params$vis])
-
-    flux = LeafPhotosynthesis (physcon, atmos, leaf, flux)
-    par <- c(par,atmos$par)
-    tleaf <- c(tleaf,flux$tleaf - physcon$tfrz)
-    ca <- c(ca,atmos$co2air)
-    ci_ca <- c(ci_ca,flux$ci / atmos$co2air)
-    ac <- c(ac,flux$ac - flux$rd)
-    aj <- c(aj,flux$aj - flux$rd)
-    an <- c(an,flux$an)
-  }
-
-  df <- data.frame(flux= flux,
-                   par = par,
-                   tleaf = tleaf,
-                   ca = ca,
-                   ci_ca = ci_ca,
-                   Ac = ac,
-                   Aj = aj,
-                   An = an)
-
-  df_new <- df %>% pivot_longer(cols = c(Ac,Aj,An),
-                                names_to = "A",
-                                values_to = "value")
-
-  newplot <- ggplot(data = df_new) +
-    geom_line(aes(x = par,y = value, col = A)) +
-    theme_bw()
-
-} else if (plot_type == 2){
-
-  for (i in seq(40,1000,length.out = 1000)){
-
-    atmos$co2air = i / 0.7
-    flux = LeafPhotosynthesis (physcon, atmos, leaf, flux)
-
-    par <- c(par,atmos$par)
-    tleaf <- c(tleaf,flux$tleaf - physcon$tfrz)
-    ca <- c(ca,atmos$co2air)
-    ci_ca <- c(ci_ca,flux$ci / atmos$co2air)
-    ac <- c(ac,flux$ac - flux$rd)
-    aj <- c(aj,flux$aj - flux$rd)
-    an <- c(an,flux$an)
-  }
-
-  df <- data.frame(flux= flux,
-                   par = par,
-                   tleaf = tleaf,
-                   ca = ca,
-                   ci_ca = ci_ca,
-                   Ac = ac,
-                   Aj = aj,
-                   An = an)
-  df_new <- df %>% pivot_longer(cols = c(Ac,Aj,An),
-                                names_to = "A",
-                                values_to = "value")
-
-
-  newplot <- ggplot(data = df_new) +
-    geom_line(aes(x = ca,y = value, col = A)) +
-    theme_bw()
-
-} else if (plot_type == 3){
-
-  for (i in seq(10,35,length.out = 1000)){
-
-    flux$tleaf = physcon$tfrz + i;
-    flux = LeafPhotosynthesis (physcon, atmos, leaf, flux)
-
-    par <- c(par,atmos$par)
-    tleaf <- c(tleaf,flux$tleaf - physcon$tfrz)
-    ca <- c(ca,atmos$co2air)
-    ci_ca <- c(ci_ca,flux$ci / atmos$co2air)
-    ac <- c(ac,flux$ac - flux$rd)
-    aj <- c(aj,flux$aj - flux$rd)
-    an <- c(an,flux$an)
-  }
-
-  df <- data.frame(flux= flux,
-                   par = par,
-                   tleaf = tleaf,
-                   ca = ca,
-                   ci_ca = ci_ca,
-                   Ac = ac,
-                   Aj = aj,
-                   An = an)
-
-  df_new <- df %>% pivot_longer(cols = c(Ac,Aj,An),
-                                names_to = "A",
-                                values_to = "value")
+# We load meteo data from the fluxnet site
+fluxnet_data<-read.table(file = "scripts/FLUXNET_FI-HYY_2005-2014.csv",header = TRUE,sep = ",")
 
 
 
-  newplot <- ggplot(data = df_new) +
-    geom_line(aes(x = tleaf,y = value, col = A)) +
-    theme_bw()
+#Fluxnet data: GPP in µmolCO2 m-2 s-1
+
+# we want to apply canopy_fluxes at each time step
+apply.photosynthesis<-function(x,leaf,fluxnet_data){
+  meteo<-fluxnet_data[x,]
+  meteo$CO2<-410 # We don't forget atmospheric CO2 concentration, constant here
+  gpp<-canopy_fluxes(meteo = meteo,leaf = leaf, LAI_layer = 20, LAI_tot = 6.7)
+  return(gpp)
 }
 
-newplot
+results<-sapply(X = c(1:10000),FUN = apply.photosynthesis,leaf=leaf,fluxnet_data=fluxnet_data)

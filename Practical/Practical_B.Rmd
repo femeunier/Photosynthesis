@@ -1,0 +1,68 @@
+---
+title: Practical B - Application of a photosynthesis/stomatal conductance model
+author: "Hans Verbeeck, Félicien Meunier, Marc Peaucelle"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+header-includes: \usepackage{amsmath}
+---
+
+```{r, include=FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+## Objectives of Practical B
+
+During this second practical, we will further develop our leaf model to account for stomatal regulation. The FvCB developped during Practical A will be coupled to a stomatal conductance model (the Ball-Berry model) and applied to a Fluxnet site in Finland. We will evaluate its performance by comparing its prediction with observations of carbon uptake at this site.
+
+## Theory
+
+In practical A, we re-coded the  Farquhar, von Caemmerer and Berry model for C3 photosynthesis. For reminder, this model computed the net assimilation rate ($A_n$) from the internal concentration in CO<sub>2</sub> ($c_i$) and atmospheric/leaf variables and parameters:
+
+$$
+A_n = FcVB(c_i,atmoshere,leaf)
+$$
+Yet, the internal concentration $c_i$ cannot be directly measured: only the atmospheric concentration in CO<sub>2</sub> ($c_a$). Yet, $c_i$ can be derived from the stomatal aperture and the diffusion of CO<sub>2</sub> into the stomatal cavity:
+
+$$A_n = \frac{g_{bw}}{1.4} (c_a - c_s) = \frac{g_{sw}}{1.6} (c_s - c_i)  = \frac{1}{1.4g_{bw}^{-1} + 1.6g_{sw}^{-1}} (c_a - c_i) $$
+
+where $c_s$ is the CO<sub>2</sub> contentation at the leaf surface and $g_{bw}$ and $g_{sw}$ represent the boundary and stomatal conductances, respectively. To close the system of equations (there are three unknowns $c_i$, $g_{sw}$, and $A_n$ for only two equations), we will use in this practical the semi-empirical Ball-Berry model:
+
+$$ g_{sw} = g_{min} + g_1 \frac{A_n}{c_s}h_s$$
+
+where $g_{min}$ and $g_1$ are additional leaf parameters standing for the residual leaf conductance when stomatal are close and the stomatal slope, respectively. In addition, $h_s$ is the relative humidity at the leaf surface supposed to be equivalent to the open-air one. To resolve the system of three unknowns and three equations, we will use a simple convergence algorithm presented during the theory lecture and summarised in the following figure:
+
+```{r f1, fig.cap='Algorithm to solve the set of equations', out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE}
+knitr::include_graphics('Algo.png')
+```
+
+The initial guess of $c_i$ is plugged into the FvCB model and allows computing $A_n$ which is in turn used to calculate $c_s$ from the diffusion equation. $c_s$ can then be used to compute the stomatal conductance which serves to re-estimate $c_i$ until some convergence criterion is met. You can find such algorithm in the `Photosyntesis` function attached to this practical.
+
+Add radiative transfer model
+
+## Site
+
+We will applied this model to Hyytiala, Finland which is an Evergreen Needleleaf Forests. In other words, it is a land dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Almost all trees remain green all year (see site image). Canopy is never without green foliage. The site is characterized by a Mean Annual Temperature of 3.8°C and a Mean Annual Precipitation of 709 mm
+
+```{r f2, fig.cap='Photo of the modelled site', out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE}
+knitr::include_graphics('fi-hyy-site15overview.gif')
+```
+
+## Questions and report details
+
+0. First explore the package functions. The core is the $canopy_fluxes$ function that essentially takes care of all the steps described above. In particular, it calls the `Photosyntesis` function that solves the system of equations for each layer of vegetation, and aggregates the results. Also pay attention to the `FvCB` function that should be similar to the one you wrote yourself during the last practical.
+
+1. Create a new script to load and explore the input (meterological) data (the FLUXNET_FI-HYY_2005-2014.csv file). Plot in particular the seasonal and diurnal cycles of the following variables: air temperature, relative humidity, short-wave radiation, and atmospheric pressure that force the photosynthesis/stomatal conductance model. If there are non-sensical values, replace them by the corresponding re-analysis columns (the equivalent ERA columns) 
+
+2. Now, we are going to build and run the photosynthesis/stomatal conductance model (). Use the Install and Restart function button in the Build package in Rstudio to make use of the function. Then open the `Test_photosynthesis` R script to compute the first 5000 timesteps. Follow the workflow to see if you understand the steps explored by the functions.
+
+3. Run the photosynthesis/stomatal conductance model for all the timesteps and compare with the observations
+
+4. Re-run the model with more appropriate leaf parameters and compare with the previous simulation
+
+5. Add outputs and compare sunlit and shaded leaves

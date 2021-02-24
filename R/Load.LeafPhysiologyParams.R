@@ -39,7 +39,7 @@ Load.LeafPhysiologyParams <- function(){
   leaf$gmin=76.20                                # Minimum stomatal conductance to water vapour in mmol m-2 s-1
   leaf$gfac=13.70                                # Stomatal sensitivity coefficient (dimmensionless)
   leaf$gb=300                                    # Leaf boundary layer conductance to water vapour in mmol m-2 s-1
-  leaf$Ifac=0.5                                  # Coefficient representing the extent to whichRdarkis inhibited in the light (dimmensionless)
+  leaf$Ifac=0.5                                  # Coefficient representing the extent to which Rdark is inhibited in the light (dimmensionless)
 
   leaf$g0=0.01
   leaf$g1=9

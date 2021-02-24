@@ -29,7 +29,7 @@ canopy_fluxes<-function(meteo, leaf, LAI_layer = 20, LAI_tot = 4){
   atmos$Ca<-co2_to_ca(co2 = meteo$CO2, patm = meteo$PA)
 
   # We compute a first estimate of Ci
-  # Several models make the assumption that Ci = 70% of Ca.In fact we know that Ci varies between biomes and climate conditions
+  # Several models make the assumption that Ci = 70% of Ca. In fact we know that Ci varies between biomes and climate conditions
   atmos$Ci <- 0.7 * atmos$Ca
 
   # We now add the relative humidity needed to compute stomatal conductance

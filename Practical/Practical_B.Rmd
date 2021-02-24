@@ -37,11 +37,11 @@ $$ g_{sw} = g_{min} + g_1 \frac{A_n}{c_s}h_s$$
 
 where $g_{min}$ and $g_1$ are additional leaf parameters standing for the residual leaf conductance when stomatal are close and the stomatal slope, respectively. In addition, $h_s$ is the relative humidity at the leaf surface supposed to be equivalent to the open-air one. To resolve the system of three unknowns and three equations, we will use a simple convergence algorithm presented during the theory lecture and summarised in the following figure:
 
-```{r f1, fig.cap='Algorithm to solve the set of equations', out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE}
+```{r f1, fig.cap='Algorithm to solve the set of equations', out.width='60%', fig.asp=.75, fig.align='center',echo=FALSE}
 knitr::include_graphics('Algo.png')
 ```
 
-The initial guess of $c_i$ is plugged into the FvCB model and allows computing $A_n$ which is in turn used to calculate $c_s$ from the diffusion equation. $c_s$ can then be used to compute the stomatal conductance which serves to re-estimate $c_i$ until some convergence criterion is met. You can find such algorithm in the `Photosynthesis` function attached to this practical.
+The initial guess of $c_i$ is plugged into the FvCB model and allows computing $A_n$ which is in turn used to calculate $c_s$ from the diffusion equation. $c_s$ can then be used to compute the stomatal conductance which serves to re-estimate $c_i$ until some convergence criterion is met. 
 
 Add radiative transfer model
 
@@ -62,16 +62,17 @@ install.packages("devtools")
 devtools::install_github("femeunier/Photosynthesis")
 ```
 
-And now the package should be made available for loading:
+And now the package should be available for loading:
 ```{r, eval=TRUE}
 library("Photosynthesis")
 ```
 
 ## Questions and report details
 
-0. First explore the package functions. The core is the $canopy_fluxes$ function that essentially takes care of all the steps described above. In particular, it calls the `Photosynthesis` function that solves the system of equations for each layer of vegetation, and aggregates the results. Also pay attention to the `FvCB` function that should be similar to the one you wrote yourself during the last practical.
+0. First explore the package functions. To do so, you can either call a function without the parentheses (for example, `Photosynthesis::Photosynthesis`) or write the function in a script and left-click + ctrl on the function name. The core is the `canopy_fluxes` function that essentially takes care of all the steps described above. In particular, it calls the `Photosynthesis` function that solves the system of equations for each layer of vegetation. In addition `canopy_fluxes` aggregates the results for the entire canopy. Also pay attention to the `FvCB.model` function that should be similar to the one you wrote yourself during the last practical.
 
 1. Now, we are going to build and run the photosynthesis/stomatal conductance model. Create a new R script to compute the first 5000 timesteps. It should look like:
+
 ```{r, eval=FALSE}
 
 rm(list = ls())
@@ -86,7 +87,7 @@ library(Photosynthesis)
 # leaf physiolofical parameters
 leaf <- Load.LeafPhysiologyParams()
 
-# Adapt leaf photosynthetic parameters corresponding to average values for boreal conifers (Step 2)
+# Adapt leaf photosynthetic parameters corresponding to average values for boreal conifers (Step 4)
 # leaf$vcmax25
 # leaf$jmax25
 
@@ -112,11 +113,12 @@ results<-sapply(X = c(1:N),FUN = apply.photosynthesis,leaf=leaf,fluxnet_data=flu
 # GPP is in µmolCO2 m-2 soil s-1, so we need to multiply by the site LAI
 plot(results[1,1:N]*siteLAI,fluxnet_data$GPP[1:N])
 
+# For Step 5, you need to modify the canopy_fluxes function and explore the new outputs here.
 ```
 
-Follow the workflow to see if you understand the steps explored by the scripts and the call to the functions.
+Follow the workflow and see if you understand the steps explored and the different call to the functions. Draw (manually) schematic worflow
 
-2. Create a new script to load and explore the input (meterological) data (the FLUXNET_FI-HYY_2005-2014.csv file). Plot in particular the seasonal and diurnal cycles of the following variables: air temperature, relative humidity, short-wave radiation, and atmospheric pressure that force the photosynthesis/stomatal conductance model. If there are non-sensical values, replace them by the corresponding re-analysis columns (the equivalent ERA columns) 
+2. Create a new script to load and explore the input (meterological) data (the FLUXNET_FI-HYY_2005-2014.csv file). Plot in particular the seasonal and diurnal cycles of the following variables: air temperature, relative humidity, short-wave radiation, and atmospheric pressure that force the photosynthesis/stomatal conductance model. If there are non-sensical values, replace them by the corresponding re-analysis columns (the equivalent ERA columns). 
 
 3. Run the photosynthesis/stomatal conductance model for all the timesteps and compare with the observations
 

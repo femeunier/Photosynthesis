@@ -18,13 +18,13 @@ library(kableExtra)
 
 ## Objectives of Practical B
 
-During this second practical, we will further develop our leaf model to account for stomatal regulation and the vertical intragration of processes along the canopy. The FvCB model developped during Practical A is now coupled to a stomatal conductance model (the Ball-Berry model) and the light extinction model from Monsi and Saeki (1953) following an exponential Beer-Lambert law (Slide 15 of Lecture 3). 
+During this second practical, we will further develop our leaf model to account for stomatal regulation and the vertical intragration of processes along the canopy. The Farquhar, von Caemmerer and Berry model (FvCB) model developped during Practical A is now coupled to a stomatal conductance model (the Ball-Berry model) and the light extinction model from Monsi and Saeki (1953) following an exponential Beer-Lambert law (Slide 15 of Lecture 3). 
 
 During this practical you will have to apply this new model to an evergreen coniferous forest site in Finland and evaluate its performance by comparing its prediction with observations of carbon uptake at this site.
 
 ## Theory
 ### Estimating An, gs and Ci
-In practical A, we re-coded the  Farquhar, von Caemmerer and Berry model for C3 photosynthesis. For reminder, this model computed the net assimilation rate ($A_n$) from the internal concentration in CO<sub>2</sub> ($c_i$) and atmospheric/leaf variables and parameters:
+In practical A, we re-coded the FvCB for C3 photosynthesis. For reminder, this model computed the net assimilation rate ($A_n$) from the internal concentration in CO<sub>2</sub> ($c_i$) and atmospheric (e.g. incoming radiation) and leaf variables (e.g. leaf temperature) and parameters ($V_{cmax}$):
 
 $$
 A_n = FcVB(c_i,atmoshere,leaf)
@@ -33,11 +33,11 @@ Yet, the internal concentration $c_i$ cannot be directly measured: only the atmo
 
 $$A_n = \frac{g_{bw}}{1.4} (c_a - c_s) = \frac{g_{sw}}{1.6} (c_s - c_i)  = \frac{1}{1.4g_{bw}^{-1} + 1.6g_{sw}^{-1}} (c_a - c_i) $$
 
-where $c_s$ is the CO<sub>2</sub> contentation at the leaf surface and $g_{bw}$ and $g_{sw}$ represent the boundary and stomatal conductances, respectively. To close the system of equations (there are three unknowns $c_i$, $g_{sw}$, and $A_n$ for only two equations), we will use in this practical the semi-empirical Ball-Berry model:
+where $c_s$ is the CO<sub>2</sub> contentation at the leaf surface and $g_{bw}$ and $g_{sw}$ represent the boundary and stomatal conductances, respectively. To close the system of equations (there are three unknowns $c_i$, $g_{sw}$, and $A_n$ for only two equations at the moment), we will use in this practical the semi-empirical Ball-Berry model:
 
 $$ g_{sw} = g_{min} + g_1 \frac{A_n}{c_s}h_s$$
 
-where $g_{min}$ and $g_1$ are additional leaf parameters standing for the residual leaf conductance when stomatal are close and the slope of the relationships with $A_n$, respectively. In addition, $h_s$ is the relative humidity (in %) at the leaf surface supposed to be equivalent to the open-air one. To resolve the system of three unknowns and three equations, we will use a simple convergence algorithm presented during the theory lecture 2 (slide 42) and summarised in the following figure:
+where $g_{min}$ and $g_1$ are additional leaf parameters standing for the residual leaf conductance when stomatal are closed and the slope of the $g_{sw}$-$A_n$ relationship, respectively. In addition, $h_s$ is the relative humidity (in %) at the leaf surface supposed to be equivalent to the open-air one. To resolve the system of three unknowns and three equations, we will use a simple convergence algorithm presented during the theory lecture 2 (slide 42) and summarised in the following figure:
 
 ```{r f1, fig.cap='Algorithm to solve the set of equations', out.width='60%', fig.asp=.75, fig.align='center',echo=FALSE}
 knitr::include_graphics('Algo.png')
@@ -48,21 +48,21 @@ The initial guess of $c_i$ is plugged into the FvCB model and allows computing $
 ### Canopy integration
 The equations above allow to estimate the assimilation rate at the leaf level. Now we need to integrate the information at the canopy level and at the site level. 
 
-We implemented a second set of equations to reproduce the attenuation of the light into the canopy. The coefficient of light extinction into the canopy follows a Beer-Lambert law as described in Monsi and Saeki (1953). This representation is still commonly used in big-leaf models since it is efficient in term of computing ressources, and sufficient for several research questions which do not require an explicit representation of the canopy (refers to slide 15 and 16 of Lecture 3):
+To do so, we implemented a second set of equations to reproduce the attenuation of the light into the canopy. The coefficient of light extinction into the canopy follows a Beer-Lambert law as described in Monsi and Saeki (1953). This representation is still commonly used in big-leaf models since it is efficient in term of computing ressources, and sufficient for several research questions which do not require an explicit representation of the canopy (refers to slide 15 and 16 of Lecture 3):
 $$
 I^{\downarrow}=I^{\downarrow}_{sky}e^{-K_bL}
 $$
-with $I^{\downarrow}$ the incident radiation reaching the LAI layer $L$ and depending on the direct beam extinction coefficient $K_b$.
+with $I^{\downarrow}$ the incident radiation reaching the LAI layer $L$ which depends on the direct beam extinction coefficient $K_b$. $I^{\downarrow}_{sky}$ represents the incoming solar radiation.
 
-This model simulates light transmission into an homogeneous medium without scattering. Practically, the canopy, represented by its leaf area index (LAI) is decomposed into several layers along the vertical profile. This decomposition accounts for the distribution of leaves, with more leaves at the bottom than at the top. For each layer we compute the extinction coefficient of light. This coefficient will then be applied to the incomming radiation. 
+This model simulates light transmission into an homogeneous medium without scattering. Practically, the canopy, represented by its leaf area index (LAI) is decomposed into several layers along the vertical profile. This decomposition accounts for the distribution of leaves. For each layer we compute the extinction coefficient of light. This coefficient will then be applied to the incoming radiation. 
 
-Following this decomposition, assimiliation is computed for each LAI layer but with the adjusted light environment. It means that each LAI layer is considered as a single leaf (big leaf model). Normally, other parameters will also depend on the canopy position, such as vcmax and jmax (see upcomming Lecture 6). However, for this practical, only light will be modified. 
+Following this decomposition, assimiliation is computed for each LAI layer and is adjusted according to the light environment. It means that each LAI layer is considered as a single leaf (big leaf model). Normally, other parameters will also depend on the canopy position, such as $V_{cmax}$ and $J_{max}$ (see upcoming Lecture 6). However, this is not taken into account in our model representation.
 
-Once assimilation is computed for each LAI layer, we integrate the flux at the canopy scale by weighting fluxes by their position into the canopy. Finally, canopy fluxes are integrated at the site level using the available information on the LAI of the site. 
+Once assimilation is computed for each LAI layer, we integrate the flux at the canopy scale by weighting the fluxes according to their position into the canopy. Finally, canopy fluxes are integrated at the site level using the available information on the total LAI of the site. 
 
 ## Site
 
-We will apply this model to Hyytiala, Finland which is an Evergreen Needleleaf Forests. In other words, it is a land dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Almost all trees remain green all year (see site image). Canopy is never without green foliage. The site is characterized by a Mean Annual Temperature of 3.8°C, a Mean Annual Precipitation of 709 mm and a LAI of 6.7. This site is part of the FLUXNET network, which means that an eddy-covariance tower is installed and measures both meteorological variable and ecosystem CO<sub>2</sub> fluxes every 30 minutes. These are the meteorological data that we will use to force our model. 
+We will apply this model to Hyytiala, Finland which is an Evergreen Needleleaf Forests. In other words, it is a land dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Almost all trees remain green all year (see site image). Canopy is never without green foliage. The site is characterized by a Mean Annual Temperature of 3.8°C, a Mean Annual Precipitation of 709 mm and a total LAI of 6.7. This site is part of the FLUXNET network, which means that an eddy-covariance tower is installed and measures both meteorological variables and ecosystem CO<sub>2</sub> fluxes every 30 minutes. These are the meteorological data that we will use to force and validate our model. 
 
 ```{r f2, fig.cap='Photo of the modelled site', out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE}
 knitr::include_graphics('fi-hyy-site15overview.gif')
@@ -76,23 +76,25 @@ The model is developed as an R package. It means that all the functions are in t
 For this practical, you can either use directly the functions that are in the R folder, or build the package in the Rstudio environment. 
 In both case, start by opening the `Photosynthesis.Rproj` project. 
 
-If you chose to work with the package (not mandatory, only if you are confortable with it), you can build it by pressing the "Install and Restart" button in the "Build" tab. 
+If you choose to work with the package (not mandatory, only if you feel confortable with it), you can build it by pressing the "Install and Restart" button in the "Build" tab. 
 
 In that case the package should be available for loading:
 ```{r, eval=TRUE}
 library("Photosynthesis")
 ```
 
+Otherwise, you will need to `source` the functions that you need for the practical.
 
 ## Questions and report details
 
-0. First explore the package functions. Compared to Practical A, we added two main functions: The core is the `canopy_fluxes` function that essentially takes care of all the steps described above. In particular, it calls the `Photosynthesis` function that solves the system of equations for each layer of vegetation. In addition `canopy_fluxes` aggregates the results for the entire canopy. Also pay attention to the `FvCB.model` function from Practical A that should be similar to the one you wrote yourself during the last practical. 
+0. First explore the package functions. Compared to Practical A, we added two main functions: the core is the `canopy_fluxes` function that essentially takes care of all the steps described above. In particular, it calls the `Photosynthesis` function that solves the system of equations for each layer of vegetation. In addition `canopy_fluxes` aggregates the results for the entire canopy. Also pay attention to the `FvCB.model` function from Practical A that should be similar to the one you wrote yourself during the last practical. 
 
 1. From now, we are going to build and run the photosynthesis/stomatal conductance model. To do so, follow the steps: 
+
 * Create a new R script.
-* Load the libray needed for the analysis
+* Load the libray needed for the analysis or build the package as described above
 * Load the parameters needed to run the model
-* Load the meteorological data provided with the Photosynthesis package
+* Load the meteorological data (file FLUXNET_FI-HYY_2006-2009.csv) provided with the Photosynthesis package
 * Explore the meteorological data. Clean the file and remove non-sensical values if any. You can also decide to gap-fill the data with an average value. 
 * Create a function that will call `canopy_fluxes` for each time step of the meteorological data. 
 
@@ -105,7 +107,7 @@ rm(list = ls())
 library(ggplot2)
 library(Photosynthesis) # only if you work with the package, otherwise you need to load each function manually
 
-# Check the parameters for the functions canopy_fluxes
+# Example to check the parameters for the functions canopy_fluxes
 ?canopy_fluxes # only if you work with the package
 
 # we load needed parameters
@@ -150,7 +152,7 @@ apply(X=fluxnet_data,MARGIN = 2,FUN = min)
 
 # Now we want to apply canopy_fluxes at each time step
 
-siteLAI <- XXX # adapt here
+siteLAI <- XXX # adapt here (see site description)
 apply.photosynthesis<-function(x,leaf,fluxnet_data){
   meteo<-fluxnet_data[x,]
   meteo$CO2<-380 # adapt here atmospheric CO2 concentration in ppm 
@@ -171,16 +173,15 @@ results<-sapply(X = c(1:N),FUN = apply.photosynthesis,leaf=leaf,fluxnet_data=flu
 
 Follow the workflow and see if you understand the different steps. 
 
-We ask you to draw (manually) the workflow of the model on a paper and the different call to the functions. This should contain the different functions and how the functions are called (use arrows). The workflow should also contain the names of input variables and output variables, and how variables are passed from one module to another. 
-An example of workflow is the *Algorithm to solve the set of equations* presented above. 
+We ask you to draw (manually) the workflow of the model on a paper and the different calls to the functions. This should contain the different functions and how the functions are called (use arrows). The workflow should also contain the names of main input variables and output variables, and how variables are passed from one module to another. An example of such workflow is the *Algorithm to solve the set of equations* presented above. 
 
 You will have to upload a picture of your flowchart on Ufora (take a photo with your phone).
 
 2. Explore the input (meterological) data (the FLUXNET_FI-HYY_2006-2009.csv file). Plot the seasonal and diurnal cycles of the following variables: air temperature, relative humidity, short-wave radiation, and atmospheric pressure that force the photosynthesis/stomatal conductance model. 
 
-Do the same with the site GPP and compare the different year. What can you conclude from the site properties and the quality of data? 
+Do the same with the site GPP and compare the different years. What can you conclude from the site properties and the quality of data? 
 
-3. Run the photosynthesis/stomatal conductance model for only 1 year that you will select based on the analysis of the meteorological variable and GPP. 
+3. Run the photosynthesis/stomatal conductance model for one single year that you will select based on the analysis of the meteorological variable and GPP. 
 Compare your results with the observations with a critical viewpoint. Conclude about the robustness of the model. For example, you can ask yourself the following questions:
 
 Does the modeled GPP match the data? Does it reproduces the seasonality? The daily variability? The average value? 
@@ -194,4 +195,4 @@ Try to be critical in your answer, both on the positive and negative aspects.
 4. For this final question, we ask you to modify the function `canopy_fluxes` to export two more variable. We would like to compare how our model is able to reproduce leaf assimilation of top-sun exposed leaves and bottom-shaded leaves. 
 
 This two variables are already calculated in the model. Thus, you will simply have to extract and export the two new variables `gpp_top` and `gpp_bottom`. 
-Rerun the model for the same year and compare the gpp simulated for sunlit and shaded leaves. 
+Rerun the model for the same year and compare the gpp simulated for sunlit and shaded leaves. To do so, you need to rebuild the package or resource the `canopy_fluxes` function after having modified it.
